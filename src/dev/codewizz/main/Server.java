@@ -49,26 +49,17 @@ public class Server {
 
             String username = new String(usernameBytes, StandardCharsets.US_ASCII).trim();
             String ip = packet.getAddress().toString().replaceAll("([^0-9.])", "");
-            int id = new Random().nextInt();
+            database.insertPlayer(username, ip);
 
-            System.out.println("USER: " + username + " : " + ip);
-
-            database.insertPlayer(id, username, ip);
-
-            int unixTime = (int) (System.currentTimeMillis() / 1000L);
             return;
         } else if (data[0] == -53) {
             byte[] file = new byte[packet.getLength() - 1];
             System.arraycopy(data, 1, file, 0, file.length);
             String fileName = new String(file, StandardCharsets.US_ASCII).trim();
-
-            System.out.println("File requested: " + fileName);
             sendFile(fileName, packet.getAddress(), packet.getPort());
 
             return;
         }
-
-        System.out.println("Wtf? " + Arrays.toString(data));
     }
 
     private void sendFile(String fileName, InetAddress address, int port) {
@@ -99,8 +90,6 @@ public class Server {
                 offset += size - 5;
                 index++;
                 send(chunk, address, port);
-
-                System.out.println("Sending chunk: " + offset + " / " + data.length + " (" + index + ", " + chunk[0] + ")");
             }
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,9 +1,9 @@
 package dev.codewizz.main;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.*;
 
 public class Database {
 
@@ -30,51 +30,31 @@ public class Database {
 	
 	public boolean setup() {
 		if(!open) open();
-		
-		
+
 		if(open) {
-			try {
-				Statement statement = connection.createStatement();
-				String command = "CREATE TABLE IF NOT EXISTS PLAYERS " +
-									"(ID INT PRIMARY KEY NOT NULL," +
-									"NAME TEXT NOT NULL," +
-									"IP TEXT NOT NULL)";
-				
-				String command2 = "CREATE TABLE IF NOT EXISTS PLAYTIME " +
-									"(ID INT PRIMARY KEY NOT NULL,"
-								+   "START DATE NOT NULL,"
-								+   "LAST DATE NOT NULL,"
-								+   "TOTAL INT NOT NULL)";
-				
-				statement.executeUpdate(command);
-				statement.executeUpdate(command2);
-				statement.close();
-				return true;
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			executeSqlFile(connection, "sql/setup.sql");
+			return true;
 		}
 		return false;
 	}
 	
-	public boolean insertPlayer(int id, String name, String ip) {
+	public boolean insertPlayer(String name, String ip) {
 		try {
 			connection.setAutoCommit(false);
-			Statement statement = connection.createStatement();
-			String command = "INSERT INTO PLAYERS (ID, NAME, IP) " +
-								"VALUES (" + (int)Math.abs(id) + ",'" + name + "', '" + ip + "')";
-			
-			System.out.println(command);
-			
-			statement.executeUpdate(command);
+			String sql = "INSERT INTO PLAYER (NAME, IP) VALUES (?, ?)";
+			PreparedStatement statement = connection.prepareStatement(sql);
+
+			statement.setString(1, name);
+			statement.setString(2, ip);
+
+			statement.execute();
 			statement.close();
 			connection.commit();
 			return true;
 		} catch (SQLException e) {
 			e.printStackTrace();
+			return false;
 		}
-		
-		return false;
 	}
 	
 	public void close() {
@@ -82,6 +62,24 @@ public class Database {
 		try {
 			connection.close();
 		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void executeSqlFile(Connection conn, String filePath) {
+		try (BufferedReader br = new BufferedReader(new FileReader(filePath));
+			 Statement stmt = conn.createStatement()) {
+
+			StringBuilder sql = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sql.append(line);
+				if (line.trim().endsWith(";")) { // Assumes SQL commands end with semicolons
+					stmt.execute(sql.toString());
+					sql = new StringBuilder();
+				}
+			}
+		} catch (IOException | SQLException e) {
 			e.printStackTrace();
 		}
 	}
