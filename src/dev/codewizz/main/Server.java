@@ -51,6 +51,8 @@ public class Server {
             String ip = packet.getAddress().toString().replaceAll("([^0-9.])", "");
             database.insertPlayer(username, ip);
 
+            System.out.println("New connection!");
+
             return;
         } else if (data[0] == -53) {
             byte[] file = new byte[packet.getLength() - 1];
