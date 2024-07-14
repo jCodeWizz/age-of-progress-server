@@ -7,7 +7,7 @@ import java.sql.*;
 
 public class Database {
 
-	public static final String PATH = "jdbc:sqlite:sample.db";
+	public static final String PATH = "jdbc:sqlite:test.db";
 
 	private Connection connection;
 	private boolean open;
@@ -19,7 +19,7 @@ public class Database {
 	public void open() {
 		try {
 			Class.forName("org.sqlite.JDBC");
-			connection = DriverManager.getConnection("jdbc:sqlite:test.db");
+			connection = DriverManager.getConnection(PATH);
 			open = true;
 		} catch (Exception e) {
 			System.err.println(e.getClass().getName() + ": " + e.getMessage());

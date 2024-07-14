@@ -9,8 +9,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Random;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,13 +18,13 @@ public class Server {
     private static final int SERVER_PORT = 25565;
 
     private final int MAX_PACKET_SIZE = 1024;
-    private byte[] receivedDataBuffer = new byte[MAX_PACKET_SIZE * 10];
+    private final byte[] receivedDataBuffer = new byte[MAX_PACKET_SIZE * 10];
 
     private DatagramSocket socket;
     public Thread listenThread;
     private boolean connected;
 
-    private Database database;
+    private final Database database;
 
     public Server() {
         if (!connect()) {
@@ -62,6 +60,8 @@ public class Server {
 
             return;
         }
+
+        System.err.println("Received code: " + data[0]);
     }
 
     private void sendFile(String fileName, InetAddress address, int port) {
@@ -94,7 +94,7 @@ public class Server {
                 send(chunk, address, port);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("couldn't read file: " + e);
         }
     }
 
@@ -103,17 +103,12 @@ public class Server {
         try {
             socket = new DatagramSocket(SERVER_PORT);
         } catch (SocketException e) {
-            e.printStackTrace();
+            System.err.println("Couldn't create socket: " + e);
             connected = false;
             return false;
         }
 
-        listenThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                listen();
-            }
-        }, "packet-handler");
+        listenThread = new Thread(this::listen, "packet-handler");
         listenThread.start();
 
         connected = true;
@@ -136,6 +131,7 @@ public class Server {
                 process(packet);
             }
         }
+        stop();
     }
 
     public void send(byte[] data, InetAddress address, int port) {
@@ -143,12 +139,13 @@ public class Server {
         try {
             socket.send(packet);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Couldn't send data: " + e);
         }
     }
 
     public void stop() {
         connected = false;
+        database.close();
         socket.close();
     }
 }
